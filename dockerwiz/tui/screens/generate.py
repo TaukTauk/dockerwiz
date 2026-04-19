@@ -60,7 +60,7 @@ class GenerateScreen(Screen[None]):
 
     def on_mount(self) -> None:
         self.sub_title = self.STEP
-        self.run_worker(self._generate_files, exclusive=True)
+        self.run_worker(self._generate_files, exclusive=True)  # type: ignore[arg-type]
 
     async def _generate_files(self) -> None:
         from dockerwiz.generator import (  # noqa: PLC0415

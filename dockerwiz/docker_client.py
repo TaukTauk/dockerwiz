@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, TypedDict
 
 if TYPE_CHECKING:
     import docker as docker_sdk
@@ -35,7 +35,7 @@ def require_docker() -> docker_sdk.DockerClient:
     return _get_client()
 
 
-def get_containers(client: docker_sdk.DockerClient, all_containers: bool = False) -> list[object]:
+def get_containers(client: docker_sdk.DockerClient, all_containers: bool = False) -> list[Any]:
     """Return a list of containers (running by default, all if all_containers=True)."""
     return client.containers.list(all=all_containers)
 
@@ -107,26 +107,31 @@ def run_health_check(compose_file: Path | None = None) -> list[dict[str, str]]:
     try:
         client = _get_client()
         for container in client.containers.list():
-            health = container.attrs.get("State", {}).get("Health", {})
-            h_status = health.get("Status", "none")
-            c_status = container.status
+            health   = container.attrs.get("State", {}).get("Health", {})
+            h_status = str(health.get("Status", "none"))
+            c_status = str(container.status or "unknown")
+            name     = str(container.name or "")
 
             if c_status != "running":
-                results.append({"service": container.name, "status": "FAIL", "message": c_status})
+                results.append({"service": name, "status": "FAIL", "message": c_status})
             elif h_status == "unhealthy":
-                results.append({"service": container.name, "status": "FAIL",
-                                 "message": "unhealthy"})
+                results.append({"service": name, "status": "FAIL", "message": "unhealthy"})
             else:
-                msg = f"running ({h_status})"
-                results.append({"service": container.name, "status": "OK", "message": msg})
+                results.append({"service": name, "status": "OK",
+                                 "message": f"running ({h_status})"})
     except DockerNotAvailableError as exc:
         results.append({"service": "Docker daemon", "status": "FAIL", "message": str(exc)})
 
     return results
 
 
-def list_unused_resources(client: docker_sdk.DockerClient) -> dict[str, object]:
-    """Return counts and sizes of unused Docker resources."""
+class _UnusedResources(TypedDict):
+    stopped_containers: list[Any]
+    dangling_images: list[Any]
+
+
+def list_unused_resources(client: docker_sdk.DockerClient) -> _UnusedResources:
+    """Return stopped containers and dangling images."""
     stopped_containers = [c for c in client.containers.list(all=True) if c.status == "exited"]
     dangling_images    = client.images.list(filters={"dangling": True})
 

@@ -240,7 +240,7 @@ def config_list_cmd() -> None:
 
     def _show(section: str, obj: object) -> None:
         console.print(f"\n  \\[{section}]")
-        for field in obj.model_fields:  # type: ignore[union-attr]
+        for field in obj.model_fields:  # type: ignore[attr-defined]
             val = getattr(obj, field)
             console.print(f"  {field:<20} = {val if val is not None else '(not set)'}")
 

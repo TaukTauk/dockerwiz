@@ -5,9 +5,10 @@ from __future__ import annotations
 from textual.app import ComposeResult
 from textual.containers import Container
 from textual.screen import Screen
+from textual.widget import Widget
 from textual.widgets import Button, Checkbox, Label
 
-from dockerwiz.services import SERVICES, get_mutex_conflicts
+from dockerwiz.services import SERVICES, ServiceDefinition, get_mutex_conflicts
 
 
 class ServicesScreen(Screen[None]):
@@ -20,11 +21,11 @@ class ServicesScreen(Screen[None]):
         selected = set(partial.services)
 
         # Group services by category
-        categories: dict[str, list[object]] = {}
+        categories: dict[str, list[ServiceDefinition]] = {}
         for svc in SERVICES:
             categories.setdefault(svc.category, []).append(svc)
 
-        widgets: list[object] = [
+        widgets: list[Widget] = [
             Label("Services", classes="screen-title"),
             Label("─" * 44, classes="divider"),
             Label("Select the services your project needs.", classes="hint-msg"),

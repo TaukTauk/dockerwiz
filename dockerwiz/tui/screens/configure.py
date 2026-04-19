@@ -5,6 +5,7 @@ from __future__ import annotations
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal
 from textual.screen import Screen
+from textual.widget import Widget
 from textual.widgets import Button, Input, Label
 
 
@@ -18,7 +19,7 @@ class ConfigureScreen(Screen[None]):
         has_db   = "postgres" in partial.services or "mysql" in partial.services
         db_label = "PostgreSQL" if "postgres" in partial.services else "MySQL"
 
-        widgets: list[object] = [
+        widgets: list[Widget] = [
             Label("Configuration", classes="screen-title"),
             Label("─" * 44, classes="divider"),
 
