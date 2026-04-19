@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install *)",
+      "Bash(dockerwiz --help)",
+      "Bash(dockerwiz version *)",
+      "Bash(dockerwiz list *)",
+      "Bash(python -m pytest tests/test_models.py tests/test_stacks.py tests/test_services.py -v)"
+    ]
+  }
+}
