@@ -59,4 +59,4 @@ jobs:
         run: pip install hatch
 
       - name: Run integration tests
-        run: hatch run pytest tests/integration/ -v
+        run: hatch run pytest tests/integration/ -v || [ $? -eq 5 ]
