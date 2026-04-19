@@ -1,0 +1,19 @@
+services:
+  app:
+    build: .
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    env_file: .env
+    networks:
+      - app-network
+
+
+
+
+
+
+volumes:
+
+networks:
+  app-network:
+    driver: bridge

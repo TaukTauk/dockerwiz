@@ -1,0 +1,9 @@
+# Development overrides — applied automatically by docker compose
+# Not committed to production deployments
+
+services:
+  app:
+    volumes:
+      - .:/app
+    environment:
+      DEBUG: "true"

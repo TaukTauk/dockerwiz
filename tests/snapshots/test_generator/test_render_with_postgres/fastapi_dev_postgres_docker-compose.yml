@@ -1,0 +1,40 @@
+services:
+  app:
+    build: .
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER:     ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB:       ${DB_NAME}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:     ["CMD", "pg_isready", "-U", "${DB_USER}"]
+      interval: 10s
+      timeout:  5s
+      retries:  5
+    networks:
+      - app-network
+
+
+
+
+
+volumes:
+  pgdata:
+
+networks:
+  app-network:
+    driver: bridge

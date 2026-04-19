@@ -1,0 +1,37 @@
+{% if is_prod %}
+# ── Build stage ────────────────────────────────────────────────────────────────
+FROM {{ base_image }} AS builder
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server .
+
+# ── Runtime stage ──────────────────────────────────────────────────────────────
+FROM scratch
+
+COPY --from=builder /app/server /server
+
+EXPOSE {{ app_port }}
+
+CMD ["/server"]
+{% else %}
+FROM {{ base_image }}
+
+WORKDIR /app
+
+RUN go install github.com/air-verse/air@latest
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+EXPOSE {{ app_port }}
+
+CMD ["air", "-c", ".air.toml"]
+{% endif %}

@@ -1,0 +1,51 @@
+.PHONY: up down logs shell build restart help{% if has_postgres or has_mysql or has_mongo %} db{% endif %}
+
+
+help:
+	@echo "Usage: make <target>"
+	@echo ""
+	@echo "Targets:"
+	@echo "  up       Start all containers in the background"
+	@echo "  down     Stop and remove containers"
+	@echo "  logs     Follow container logs"
+	@echo "  shell    Open a shell in the app container"
+	@echo "  build    Rebuild images (no cache)"
+	@echo "  restart  Restart the app container"
+{% if has_postgres %}
+	@echo "  db       Connect to PostgreSQL (psql)"
+{% elif has_mysql %}
+	@echo "  db       Connect to MySQL client"
+{% elif has_mongo %}
+	@echo "  db       Connect to MongoDB (mongosh)"
+{% endif %}
+	@echo "  help     Show this message"
+
+
+up:
+	docker compose up -d
+
+down:
+	docker compose down
+
+logs:
+	docker compose logs -f
+
+shell:
+	docker compose exec app bash || docker compose exec app sh
+
+build:
+	docker compose build --no-cache
+
+restart:
+	docker compose restart app
+
+{% if has_postgres %}
+db:
+	docker compose exec postgres psql -U $${DB_USER} -d $${DB_NAME}
+{% elif has_mysql %}
+db:
+	docker compose exec mysql mysql -u $${DB_USER} -p$${DB_PASSWORD} $${DB_NAME}
+{% elif has_mongo %}
+db:
+	docker compose exec mongo mongosh -u $${MONGO_USER} -p $${MONGO_PASSWORD}
+{% endif %}

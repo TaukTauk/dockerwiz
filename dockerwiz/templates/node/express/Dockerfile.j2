@@ -1,0 +1,37 @@
+{% if is_prod %}
+# ── Build stage ────────────────────────────────────────────────────────────────
+FROM {{ base_image }} AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --only=production
+
+# ── Runtime stage ──────────────────────────────────────────────────────────────
+FROM {{ base_image }}
+
+WORKDIR /app
+
+COPY --from=builder /app/node_modules ./node_modules
+COPY . .
+
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+
+EXPOSE {{ app_port }}
+
+CMD ["node", "index.js"]
+{% else %}
+FROM {{ base_image }}
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+EXPOSE {{ app_port }}
+
+CMD ["npx", "nodemon", "index.js"]
+{% endif %}

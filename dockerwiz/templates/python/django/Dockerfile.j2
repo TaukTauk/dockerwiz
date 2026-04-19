@@ -1,0 +1,42 @@
+{% if is_prod %}
+# ── Build stage ────────────────────────────────────────────────────────────────
+FROM {{ base_image }} AS builder
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir --user -r requirements.txt
+
+# ── Runtime stage ──────────────────────────────────────────────────────────────
+FROM {{ base_image }}
+
+WORKDIR /app
+
+COPY --from=builder /root/.local /root/.local
+
+COPY . .
+
+RUN useradd --no-create-home --shell /bin/false appuser \
+    && chown -R appuser:appuser /app
+
+USER appuser
+
+EXPOSE {{ app_port }}
+
+ENV PATH=/root/.local/bin:$PATH
+
+CMD ["python", "manage.py", "runserver", "0.0.0.0:{{ app_port }}"]
+{% else %}
+FROM {{ base_image }}
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+EXPOSE {{ app_port }}
+
+CMD ["python", "manage.py", "runserver", "0.0.0.0:{{ app_port }}"]
+{% endif %}
