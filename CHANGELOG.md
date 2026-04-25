@@ -7,6 +7,44 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.1.1] — 2026-04-25
+
+### Fixed
+
+- **TUI — short terminal overlap**: all 6 wizard screens now use `VerticalScroll` as the outer
+  container instead of plain `Container`. Textual's `Container` has scrolling disabled at the widget
+  level, so `overflow-y: auto` in CSS was silently ignored and content spilled out below the
+  terminal, overlapping the footer. `VerticalScroll` has scrolling enabled natively; content now
+  scrolls cleanly on any terminal height.
+- **TUI — language screen crash on rapid selection**: switching language radio buttons quickly
+  caused a `ValueError` crash (`RadioButton is not in list`). Root cause: Textual's `RadioSet`
+  keeps an internal `_pressed_button` reference that is not cleared when children are removed;
+  mutating children while that reference is stale corrupts internal state. Fixed by pre-composing
+  one `RadioSet` per language at screen startup and toggling `.display` on language change — no
+  DOM mutation at runtime.
+- **TUI — framework multi-select glitch**: same `_pressed_button` corruption caused both the old
+  and new framework buttons to appear selected simultaneously when switching languages.
+- **Dockerfile missing image name prefix**: the base-image dropdown populated from Docker Hub tags
+  returned bare tags (`3.14-slim`) without the image name. The `FROM` line rendered as
+  `FROM 3.14-slim` instead of `FROM python:3.14-slim`. Tags are now prefixed with the image key
+  (`python:`, `golang:`, `node:`) before being stored in `base_image`.
+- **`.env` not created after generation**: `make up` failed silently because `docker-compose.yml`
+  references `env_file: .env` but only `.env.example` was written. The generator now auto-copies
+  `.env.example` → `.env` immediately after writing all files, so `make up` works out of the box.
+- **`DB_PASSWORD`, `DB_ROOT_PASSWORD`, `MONGO_PASSWORD` hardcoded as `changeme`**: all six
+  `.env.example.j2` templates used the literal string `changeme` instead of the `{{ db_password }}`
+  template variable. The password entered in wizard step 4 was discarded.
+- **`health` command spurious "0 warning(s)" output**: `run_health_check()` never returns a `WARN`
+  status, so the warning count was always zero. Removed the dead branch; summary now shows only
+  failure count or "All checks passed."
+
+### Added
+
+- Tests for previously untested v0.1.0 commands: `start`, `health`, `shell`, `clean`,
+  `config unset` — 11 new test cases covering happy paths and error paths.
+
+---
+
 ## [0.1.0] — 2026-04-19
 
 Initial release.
@@ -30,4 +68,5 @@ Initial release.
 - User template overrides via `~/.dockerwiz/templates/`
 - Unexpected errors logged to `~/.dockerwiz/logs/debug.log`
 
+[0.1.1]: https://github.com/TaukTauk/dockerwiz/releases/tag/v0.1.1
 [0.1.0]: https://github.com/TaukTauk/dockerwiz/releases/tag/v0.1.0

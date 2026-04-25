@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from textual.app import ComposeResult
-from textual.containers import Container
+from textual.containers import Container, VerticalScroll
 from textual.screen import Screen
 from textual.widgets import Button, Label
 
@@ -30,7 +30,7 @@ class ReviewScreen(Screen[None]):
         out_path = f"{partial.output_directory}/{partial.name}"
         files    = _files_to_generate(partial)
 
-        yield Container(
+        yield VerticalScroll(
             Label("Review", classes="screen-title"),
             Label("─" * 44, classes="divider"),
 

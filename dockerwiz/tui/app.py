@@ -16,12 +16,13 @@ class DockerWizApp(App[None]):
     TITLE = "dockerwiz"
     CSS = """
     Screen {
-        align: center middle;
+        align: center top;
     }
 
     .screen-content {
-        width: 80;
-        height: auto;
+        width: 1fr;
+        max-width: 80;
+        height: 1fr;
         padding: 1 2;
     }
 

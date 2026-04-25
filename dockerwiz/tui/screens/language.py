@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
-from textual.containers import Container, Horizontal
+from textual.containers import Container, Horizontal, VerticalScroll
 from textual.screen import Screen
 from textual.widgets import Button, Label, RadioButton, RadioSet, Select
 
@@ -27,10 +27,30 @@ class LanguageScreen(Screen[None]):
             RadioButton(_LANGUAGE_LABELS[lang], value=(lang == cur_lang), id=f"lang-{lang}")
             for lang in _LANGUAGES
         ]
-        fw_options = self._fw_options(cur_lang)
+
+        # Pre-create a RadioSet for every language. Only the active one is visible.
+        # This avoids mutating a RadioSet's children at runtime, which corrupts
+        # Textual's internal _pressed_button state and causes multi-select glitches.
+        fw_radio_sets: list[RadioSet] = []
+        for lang in _LANGUAGES:
+            fw_opts = self._fw_options(lang)
+            fw_radio_sets.append(
+                RadioSet(
+                    *[
+                        RadioButton(
+                            label,
+                            value=(fw == cur_fw if (lang == cur_lang and cur_fw) else i == 0),
+                            id=f"fw-{fw}",
+                        )
+                        for i, (fw, label) in enumerate(fw_opts)
+                    ],
+                    id=f"fw-radio-{lang}",
+                )
+            )
+
         image_options = self._image_options(cur_lang)
 
-        yield Container(
+        yield VerticalScroll(
             Label("Language and Framework", classes="screen-title"),
             Label("─" * 44, classes="divider"),
 
@@ -41,11 +61,8 @@ class LanguageScreen(Screen[None]):
                 ),
                 Container(
                     Label("Framework", classes="field-label"),
-                    RadioSet(
-                        *[RadioButton(label, value=(fw == cur_fw), id=f"fw-{fw}")
-                          for fw, label in fw_options],
-                        id="fw-radio",
-                    ),
+                    *fw_radio_sets,
+                    id="fw-container",
                 ),
             ),
 
@@ -73,6 +90,9 @@ class LanguageScreen(Screen[None]):
             src_label.update("Fetched from Docker Hub")
         else:
             src_label.update("Showing cached defaults — could not reach Docker Hub")
+        cur_lang = self.app.partial.language or "python"  # type: ignore[attr-defined]
+        for lang in _LANGUAGES:
+            self.query_one(f"#fw-radio-{lang}", RadioSet).display = (lang == cur_lang)
         self._refresh_next_button()
 
     def _fw_options(self, language: str) -> list[tuple[str, str]]:
@@ -80,36 +100,34 @@ class LanguageScreen(Screen[None]):
 
     def _image_options(self, language: str) -> list[str]:
         versions: dict[str, list[str]] = self.app.available_versions  # type: ignore[attr-defined]
-        # map language to cache key
         key_map = {"python": "python", "go": "golang", "node": "node"}
         key  = key_map.get(language, language)
         tags = versions.get(key, [])
-        return tags if tags else [f"{language}:latest"]
+        return [f"{key}:{tag}" for tag in tags] if tags else [f"{key}:latest"]
 
     def on_radio_set_changed(self, event: RadioSet.Changed) -> None:
         if event.radio_set.id == "lang-radio":
-            language  = _LANGUAGES[event.index]
-            fw_radio  = self.query_one("#fw-radio", RadioSet)
-            fw_options = self._fw_options(language)
-            fw_radio.remove_children()
-            for i, (fw, label) in enumerate(fw_options):
-                fw_radio.mount(RadioButton(label, value=(i == 0), id=f"fw-{fw}"))
-
-            # Update image dropdown
+            language = _LANGUAGES[event.index]
+            for lang in _LANGUAGES:
+                self.query_one(f"#fw-radio-{lang}", RadioSet).display = (lang == language)
             sel = self.query_one("#base-image-select", Select)
             new_options = self._image_options(language)
             sel.set_options([(t, t) for t in new_options])
             if new_options:
                 sel.value = new_options[0]
-
         self._refresh_next_button()
 
     def _refresh_next_button(self) -> None:
         lang_radio = self.query_one("#lang-radio", RadioSet)
-        fw_radio   = self.query_one("#fw-radio", RadioSet)
-        self.query_one("#btn-next", Button).disabled = (
-            lang_radio.pressed_index is None or fw_radio.pressed_index is None
-        )
+        try:
+            if lang_radio.pressed_index < 0:
+                self.query_one("#btn-next", Button).disabled = True
+                return
+            language = _LANGUAGES[lang_radio.pressed_index]
+            fw_radio = self.query_one(f"#fw-radio-{language}", RadioSet)
+            self.query_one("#btn-next", Button).disabled = fw_radio.pressed_index < 0
+        except (ValueError, IndexError):
+            self.query_one("#btn-next", Button).disabled = True
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-back":
@@ -119,20 +137,21 @@ class LanguageScreen(Screen[None]):
 
     def _advance(self) -> None:
         lang_radio = self.query_one("#lang-radio", RadioSet)
-        fw_radio   = self.query_one("#fw-radio", RadioSet)
+        if lang_radio.pressed_index < 0:
+            return
+        language   = _LANGUAGES[lang_radio.pressed_index]
+        fw_radio   = self.query_one(f"#fw-radio-{language}", RadioSet)
         sel        = self.query_one("#base-image-select", Select)
 
-        if lang_radio.pressed_index is None or fw_radio.pressed_index is None:
+        if fw_radio.pressed_index < 0:
             return
 
-        language   = _LANGUAGES[lang_radio.pressed_index]
         fw_options = self._fw_options(language)
         framework  = fw_options[fw_radio.pressed_index][0]
         base_image = (
             str(sel.value) if sel.value != Select.BLANK else self._image_options(language)[0]
         )
 
-        # Resolve default port from stacks
         from dockerwiz.stacks import get_stack  # noqa: PLC0415
         stack = get_stack(language, framework)
         default_port = stack.default_port if stack else 8000

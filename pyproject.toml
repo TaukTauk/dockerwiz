@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 # ── Project Metadata ───────────────────────────────────────────────────────────
 [project]
 name            = "dockerwiz"
-version         = "0.1.0"
+version         = "0.1.1"
 description     = "Generate production-ready Docker setups through an interactive terminal wizard."
 readme          = "README.md"
 license         = { text = "MIT" }

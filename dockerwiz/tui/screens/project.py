@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 
 from textual.app import ComposeResult
-from textual.containers import Container
+from textual.containers import Container, VerticalScroll
 from textual.screen import Screen
 from textual.widgets import Button, Input, Label, RadioButton, RadioSet
 
@@ -19,7 +19,7 @@ class ProjectScreen(Screen[None]):
 
     def compose(self) -> ComposeResult:
         partial = self.app.partial  # type: ignore[attr-defined]
-        yield Container(
+        yield VerticalScroll(
             Label("Project Setup", classes="screen-title"),
             Label("─" * 44, classes="divider"),
 

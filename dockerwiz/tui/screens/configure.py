@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
-from textual.containers import Container, Horizontal
+from textual.containers import Container, Horizontal, VerticalScroll
 from textual.screen import Screen
 from textual.widget import Widget
 from textual.widgets import Button, Input, Label
@@ -66,7 +66,7 @@ class ConfigureScreen(Screen[None]):
             )
         )
 
-        yield Container(*widgets, classes="screen-content")
+        yield VerticalScroll(*widgets, classes="screen-content")
 
     def on_mount(self) -> None:
         self.sub_title = self.STEP

@@ -106,9 +106,8 @@ def health_cmd() -> None:
         console.print(f"  [{icon}]   {r['service']:<25} {r['message']}")
 
     fails = sum(1 for r in results if r["status"] == "FAIL")
-    warns = sum(1 for r in results if r["status"] == "WARN")
-    if fails or warns:
-        console.print(f"\n  {warns} warning(s), {fails} failure(s).")
+    if fails:
+        console.print(f"\n  {fails} failure(s).")
     else:
         console.print("\n  All checks passed.")
 

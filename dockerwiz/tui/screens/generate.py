@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from textual.app import ComposeResult
-from textual.containers import Container
+from textual.containers import Container, VerticalScroll
 from textual.screen import Screen
 from textual.widgets import Button, Label, ProgressBar
 
@@ -36,7 +36,7 @@ class GenerateScreen(Screen[None]):
             for i, fname in enumerate(self._files)
         ]
 
-        yield Container(
+        yield VerticalScroll(
             Label("Generating", classes="screen-title"),
             Label("─" * 44, classes="divider"),
             Label(f"Writing files to {out_path}", classes="hint-msg"),
@@ -51,7 +51,8 @@ class GenerateScreen(Screen[None]):
         )
 
     def _compute_files(self) -> list[str]:
-        files = ["Dockerfile", "docker-compose.yml", ".dockerignore", ".env.example", "Makefile"]
+        files = ["Dockerfile", "docker-compose.yml", ".dockerignore", ".env.example", ".env",
+                 "Makefile"]
         if self._config.is_dev:
             files.insert(2, "docker-compose.override.yml")
         if self._config.has_nginx:
@@ -82,9 +83,15 @@ class GenerateScreen(Screen[None]):
                 tmp_dir = Path(tmp)
                 for i, fname in enumerate(self._files):
                     self._set_status(i, "writing...")
-                    content = rendered.get(fname, "")
-                    (tmp_dir / fname).write_text(content, encoding="utf-8")
-                    shutil.copy2(tmp_dir / fname, output_dir / fname)
+                    if fname == ".env":
+                        env_example = output_dir / ".env.example"
+                        env_dest = output_dir / ".env"
+                        if env_example.exists() and not env_dest.exists():
+                            shutil.copy2(env_example, env_dest)
+                    else:
+                        content = rendered.get(fname, "")
+                        (tmp_dir / fname).write_text(content, encoding="utf-8")
+                        shutil.copy2(tmp_dir / fname, output_dir / fname)
                     self._set_status(i, "done")
                     self.query_one("#progress", ProgressBar).advance(1)
 
@@ -102,7 +109,7 @@ class GenerateScreen(Screen[None]):
             f"Generated {len(self._files)} files in {out}/{name}"
         )
         self.query_one("#next-steps", Label).update(
-            f"\nNext steps:\n  cd {name}\n  cp .env.example .env\n  make up"
+            f"\nNext steps:\n  cd {name}\n  make up"
         )
         row = self.query_one("#action-row", Container)
         row.mount(Button("Exit", variant="primary", id="btn-exit"))
