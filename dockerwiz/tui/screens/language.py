@@ -64,6 +64,7 @@ class LanguageScreen(Screen[None]):
                     *fw_radio_sets,
                     id="fw-container",
                 ),
+                classes="lang_box"
             ),
 
             Label("Base image", classes="field-label"),
