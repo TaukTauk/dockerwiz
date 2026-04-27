@@ -57,8 +57,8 @@ async def test_fetch_non_200_falls_back():
 
 @pytest.mark.asyncio
 @respx.mock
-async def test_fetch_all_versions_offline(mocker):
-    mocker.patch("dockerwiz.docker_hub._load_cache", return_value=VersionCache())
+async def test_fetch_all_versions_offline(monkeypatch):
+    monkeypatch.setattr("dockerwiz.docker_hub._load_cache", lambda: VersionCache())
 
     for image in ["python", "golang", "node"]:
         respx.get(
