@@ -20,6 +20,10 @@ class ProjectConfig(BaseModel):
     db_password: str | None = None
     db_name: str | None = None
     db_port: int | None = None
+    host_db_port: int | None = None
+    host_redis_port: int | None = None
+    host_nginx_port: int | None = None
+    host_mongo_port: int | None = None
 
     @model_validator(mode="after")
     def validate_db_fields(self) -> ProjectConfig:
@@ -77,6 +81,10 @@ class PartialProjectConfig(BaseModel):
     db_password: str | None = None
     db_name: str | None = None
     db_port: int | None = None
+    host_db_port: int | None = None
+    host_redis_port: int | None = None
+    host_nginx_port: int | None = None
+    host_mongo_port: int | None = None
 
     def to_config(self) -> ProjectConfig:
         """Convert to final validated ProjectConfig. Raises ValidationError if incomplete."""

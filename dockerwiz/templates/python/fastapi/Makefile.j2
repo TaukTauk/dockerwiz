@@ -1,10 +1,11 @@
-.PHONY: up down logs shell build restart help{% if has_postgres or has_mysql or has_mongo %} db{% endif %}
+.PHONY: up down logs shell build restart init help{% if has_postgres or has_mysql or has_mongo %} db{% endif %}
 
 
 help:
 	@echo "Usage: make <target>"
 	@echo ""
 	@echo "Targets:"
+	@echo "  init     Initialize project (copy .env.example to .env)"
 	@echo "  up       Start all containers in the background"
 	@echo "  down     Stop and remove containers"
 	@echo "  logs     Follow container logs"
@@ -21,7 +22,13 @@ help:
 	@echo "  help     Show this message"
 
 
-up:
+.env:
+	cp .env.example .env
+	@echo "Created .env from .env.example — edit it with your secrets before running 'make up'."
+
+init: .env
+
+up: .env
 	docker compose up -d
 
 down:
