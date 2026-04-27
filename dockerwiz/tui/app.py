@@ -70,15 +70,15 @@ class DockerWizApp(App[None]):
     }
     
     .lang_box {
-		height: 10;
+        height: 10;
     }
     
     .config_box {
-		height: 15;
+        height: 15;
     }
     
     .service-row {
-		height: 5;
+        height: 5;
     }
     """
 
