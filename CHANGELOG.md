@@ -7,6 +7,17 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.1.4] — 2026-04-27
+
+### Fixed
+
+- **PostgreSQL healthcheck fails with "database does not exist"**: `pg_isready -U ${DB_USER}`
+  without `-d` attempts to connect to a database named after the user (e.g. `myuser`), which
+  never exists. Added `-d ${DB_NAME}` to the healthcheck in all six `docker-compose.yml.j2`
+  templates so the readiness probe connects to the correct database.
+
+---
+
 ## [0.1.3] — 2026-04-27
 
 ### Fixed
@@ -136,6 +147,7 @@ Initial release.
 - User template overrides via `~/.dockerwiz/templates/`
 - Unexpected errors logged to `~/.dockerwiz/logs/debug.log`
 
+[0.1.4]: https://github.com/TaukTauk/dockerwiz/releases/tag/v0.1.4
 [0.1.3]: https://github.com/TaukTauk/dockerwiz/releases/tag/v0.1.3
 [0.1.2]: https://github.com/TaukTauk/dockerwiz/releases/tag/v0.1.2
 [0.1.1]: https://github.com/TaukTauk/dockerwiz/releases/tag/v0.1.1
