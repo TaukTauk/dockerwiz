@@ -73,6 +73,10 @@ class DockerWizApp(App[None]):
 		height: 10;
     }
     
+    .config_box {
+		height: 15;
+    }
+    
     .service-row {
 		height: 5;
     }
