@@ -61,11 +61,28 @@ def build_context(config: ProjectConfig) -> dict[str, Any]:
         "is_dev":       config.is_dev,
         "is_prod":      config.is_prod,
 
-        "db_user":      config.db_user,
-        "db_password":  config.db_password,
-        "db_name":      config.db_name,
-        "db_port":      config.db_port,
+        "db_user":        config.db_user,
+        "db_password":    config.db_password,
+        "db_name":        config.db_name,
+        "db_port":        config.db_port,
+
+        "host_db_port":    config.host_db_port or config.db_port
+                           or (5432 if config.has_postgres else 3306 if config.has_mysql else None),
+        "host_redis_port": config.host_redis_port or 6379,
+        "host_nginx_port": config.host_nginx_port or 80,
+        "host_mongo_port": config.host_mongo_port or 27017,
     }
+
+
+_LANG_DEP_FILES: dict[str, list[str]] = {
+    "python": ["requirements.txt.j2"],
+    "node":   ["package.json.j2"],
+    "go":     ["go.mod.j2"],
+}
+
+_DEV_DEP_FILES: dict[str, list[str]] = {
+    "go": [".air.toml.j2"],
+}
 
 
 def _template_names(config: ProjectConfig) -> list[str]:
@@ -77,8 +94,10 @@ def _template_names(config: ProjectConfig) -> list[str]:
         ".env.example.j2",
         "Makefile.j2",
     ]
+    names.extend(_LANG_DEP_FILES.get(config.language, []))
     if config.is_dev:
         names.append("docker-compose.override.yml.j2")
+        names.extend(_DEV_DEP_FILES.get(config.language, []))
     if config.has_nginx:
         names.append("nginx.conf.j2")
     return names

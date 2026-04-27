@@ -22,7 +22,6 @@ class GenerateScreen(Screen[None]):
         self._config = config
 
     def compose(self) -> ComposeResult:
-
         self._files = self._compute_files()
         total    = len(self._files)
         out_path = f"{self._config.output_directory}/{self._config.name}"
@@ -40,7 +39,7 @@ class GenerateScreen(Screen[None]):
             Label("Generating", classes="screen-title"),
             Label("─" * 44, classes="divider"),
             Label(f"Writing files to {out_path}", classes="hint-msg"),
-            Label(""),
+            Label("", id="port-warnings"),
             *file_rows,
             Label(""),
             ProgressBar(total=total, show_eta=False, id="progress"),
@@ -51,17 +50,77 @@ class GenerateScreen(Screen[None]):
         )
 
     def _compute_files(self) -> list[str]:
+        lang = self._config.language
+
         files = ["Dockerfile", "docker-compose.yml", ".dockerignore", ".env.example", ".env",
                  "Makefile"]
+
+        if lang == "python":
+            files.append("requirements.txt")
+        elif lang == "node":
+            files.append("package.json")
+        elif lang == "go":
+            files.append("go.mod")
+
         if self._config.is_dev:
             files.insert(2, "docker-compose.override.yml")
+            if lang == "go":
+                files.append(".air.toml")
+
         if self._config.has_nginx:
             files.append("nginx.conf")
+
         return files
 
     def on_mount(self) -> None:
         self.sub_title = self.STEP
-        self.run_worker(self._generate_files, exclusive=True)  # type: ignore[arg-type]
+        self._check_ports_then_generate()
+
+    def _check_ports_then_generate(self) -> None:
+        from dockerwiz.docker_client import check_port_available  # noqa: PLC0415
+
+        cfg = self._config
+        port_checks: list[tuple[int, str]] = []
+
+        if cfg.host_db_port:
+            port_checks.append((cfg.host_db_port, "DB"))
+        if cfg.host_redis_port and cfg.has_redis:
+            port_checks.append((cfg.host_redis_port, "Redis"))
+        if cfg.host_nginx_port and cfg.has_nginx:
+            port_checks.append((cfg.host_nginx_port, "Nginx"))
+        if cfg.host_mongo_port and cfg.has_mongo:
+            port_checks.append((cfg.host_mongo_port, "MongoDB"))
+
+        conflicts = [
+            (port, name)
+            for port, name in port_checks
+            if not check_port_available(port)
+        ]
+
+        if conflicts:
+            lines = ["⚠ Port conflicts detected:"]
+            for port, name in conflicts:
+                lines.append(f"  • {name} port {port} is already in use on this host.")
+            lines.append("\nChange the host ports in the previous screen, or continue anyway.")
+            self.query_one("#port-warnings", Label).update("\n".join(lines))
+
+            row = self.query_one("#action-row", Container)
+            row.mount(Button("< Back", id="btn-back"))
+            row.mount(Button("Continue anyway", variant="warning", id="btn-continue"))
+        else:
+            self.run_worker(self._generate_files, exclusive=True)  # type: ignore[arg-type]
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-continue":
+            event.button.remove()
+            btn_back = self.query_one("#btn-back", Button)
+            btn_back.remove()
+            self.query_one("#port-warnings", Label).update("")
+            self.run_worker(self._generate_files, exclusive=True)  # type: ignore[arg-type]
+        elif event.button.id == "btn-exit":
+            self.app.exit()
+        elif event.button.id == "btn-back":
+            self.app.pop_screen()
 
     async def _generate_files(self) -> None:
         from dockerwiz.generator import (  # noqa: PLC0415
@@ -71,8 +130,8 @@ class GenerateScreen(Screen[None]):
         )
 
         try:
-            env     = build_jinja_env(self._config.language, self._config.framework)
-            context = build_context(self._config)
+            env      = build_jinja_env(self._config.language, self._config.framework)
+            context  = build_context(self._config)
             rendered = render_templates(env, context, self._config)
             output_dir = Path(self._config.output_directory) / self._config.name
             output_dir.mkdir(parents=True, exist_ok=True)
@@ -85,7 +144,7 @@ class GenerateScreen(Screen[None]):
                     self._set_status(i, "writing...")
                     if fname == ".env":
                         env_example = output_dir / ".env.example"
-                        env_dest = output_dir / ".env"
+                        env_dest    = output_dir / ".env"
                         if env_example.exists() and not env_dest.exists():
                             shutil.copy2(env_example, env_dest)
                     else:
@@ -119,9 +178,3 @@ class GenerateScreen(Screen[None]):
         row = self.query_one("#action-row", Container)
         row.mount(Button("< Back", id="btn-back"))
         row.mount(Button("Exit", variant="error", id="btn-exit"))
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "btn-exit":
-            self.app.exit()
-        elif event.button.id == "btn-back":
-            self.app.pop_screen()

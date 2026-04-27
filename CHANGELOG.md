@@ -7,6 +7,51 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.1.3] — 2026-04-27
+
+### Fixed
+
+- **Dockerfiles reference files that were never generated**: every stack's `Dockerfile` copied
+  dependency files (`requirements.txt`, `package.json`, `go.mod`) that did not exist in the
+  generated output, causing `docker compose build` to fail immediately on a fresh project.
+  Each stack now generates a minimal stub for its dependency file so builds work out of the box.
+- **Go Dockerfiles copy `go.sum` before it exists**: `COPY go.mod go.sum ./` preceded
+  `go mod download`, but the generated `go.sum` was empty — Go rejects an incomplete sum file
+  with `-mod=readonly` (the default since 1.16). Changed to `COPY go.mod ./`; Docker creates
+  a valid `go.sum` during `go mod download` and `COPY . .` does not clobber it.
+- **Port conflicts silently break `docker compose up`**: if the host already had a service on
+  port 5432 (or 3306 / 6379 / 80 / 27017), compose failed with `bind: address already in use`
+  and no prior warning. The wizard's configure screen (step 4) now shows an editable
+  "Host port overrides" row for each selected service, pre-filled with the default port.
+  Before generation begins (step 6), all chosen host ports are socket-checked; any conflict
+  surfaces a warning with "Continue anyway" / "Back" options.
+- **Nginx host port was hardcoded `80:80`**: unlike every other service, the Nginx port binding
+  used a literal string with no override path. It now uses the same `{{ host_nginx_port }}`
+  template variable as the other services.
+- **`make up` fails when `.env` does not exist**: `docker-compose.yml` declares `env_file: .env`
+  but only `.env.example` was generated. All Makefile templates now include an `init` target
+  (and a `.env` Make rule) that copies `.env.example → .env` on first run, and `up` declares
+  `.env` as a prerequisite so it auto-initialises.
+
+### Added
+
+- **Dependency file generation**: each stack generates a ready-to-use dependency file —
+  `requirements.txt` (Python/FastAPI: `fastapi`, `uvicorn[standard]`; Python/Django: `django`,
+  `gunicorn`), `package.json` (Node/Express and Node/NestJS with correct scripts and deps),
+  `go.mod` (Go/Gin and Go/Echo with module name and framework require), and `.air.toml`
+  (Go dev mode, both Gin and Echo) with a standard Air hot-reload configuration.
+- **Host port override fields** in `ProjectConfig` and `PartialProjectConfig`:
+  `host_db_port`, `host_redis_port`, `host_nginx_port`, `host_mongo_port`. These flow through
+  `build_context()` (with sensible defaults) and are baked into the generated `docker-compose.yml`
+  at generation time.
+- **`check_port_available(port)`** in `docker_client.py`: lightweight socket probe
+  (`connect_ex` with 0.3 s timeout) that returns `True` when the host port is free.
+- **25 new tests** covering: dependency file generation per stack, Go `go.sum` regression,
+  host port context defaults and overrides, compose port rendering, Makefile `init` target,
+  `check_port_available` (mocked socket — free and in-use paths, target address, timeout).
+
+---
+
 ## [0.1.2] — 2026-04-27
 
 ### Fixed
@@ -91,6 +136,7 @@ Initial release.
 - User template overrides via `~/.dockerwiz/templates/`
 - Unexpected errors logged to `~/.dockerwiz/logs/debug.log`
 
+[0.1.3]: https://github.com/TaukTauk/dockerwiz/releases/tag/v0.1.3
 [0.1.2]: https://github.com/TaukTauk/dockerwiz/releases/tag/v0.1.2
 [0.1.1]: https://github.com/TaukTauk/dockerwiz/releases/tag/v0.1.1
 [0.1.0]: https://github.com/TaukTauk/dockerwiz/releases/tag/v0.1.0

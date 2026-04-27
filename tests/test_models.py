@@ -69,3 +69,42 @@ def test_partial_to_config_missing_required():
     partial = PartialProjectConfig(name="test")  # missing many required fields
     with pytest.raises(ValidationError):
         partial.to_config()
+
+
+# ── Host port fields ───────────────────────────────────────────────────────────
+
+def test_host_port_fields_default_to_none():
+    config = _config()
+    assert config.host_db_port    is None
+    assert config.host_redis_port is None
+    assert config.host_nginx_port is None
+    assert config.host_mongo_port is None
+
+
+def test_host_port_fields_accept_values():
+    config = _config(host_db_port=5433, host_redis_port=6380, host_nginx_port=8080,
+                     host_mongo_port=27018)
+    assert config.host_db_port    == 5433
+    assert config.host_redis_port == 6380
+    assert config.host_nginx_port == 8080
+    assert config.host_mongo_port == 27018
+
+
+def test_host_ports_round_trip_through_partial():
+    partial = PartialProjectConfig(
+        name="test",
+        language="python",
+        framework="fastapi",
+        base_image="python:3.13-slim",
+        environment="dev",
+        app_port=8000,
+        host_db_port=5433,
+        host_redis_port=6380,
+        host_nginx_port=8080,
+        host_mongo_port=27018,
+    )
+    config = partial.to_config()
+    assert config.host_db_port    == 5433
+    assert config.host_redis_port == 6380
+    assert config.host_nginx_port == 8080
+    assert config.host_mongo_port == 27018

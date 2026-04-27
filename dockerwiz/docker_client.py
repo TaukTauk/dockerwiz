@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import socket
 import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypedDict
@@ -33,6 +34,13 @@ def _get_client() -> docker_sdk.DockerClient:
 def require_docker() -> docker_sdk.DockerClient:
     """Return a Docker client or raise DockerNotAvailableError."""
     return _get_client()
+
+
+def check_port_available(port: int) -> bool:
+    """Return True if the given host port is not currently in use."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(0.3)
+        return s.connect_ex(("127.0.0.1", port)) != 0
 
 
 def get_containers(client: docker_sdk.DockerClient, all_containers: bool = False) -> list[Any]:
