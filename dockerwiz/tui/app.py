@@ -68,15 +68,15 @@ class DockerWizApp(App[None]):
     Button {
         margin-left: 1;
     }
-    
+
     .lang_box {
         height: 10;
     }
-    
+
     .config_box {
         height: 15;
     }
-    
+
     .service-row {
         height: 5;
     }
