@@ -97,7 +97,7 @@ def set_config_value(config: UserConfig, key: str, value: str | None) -> UserCon
 
     section_attr, field_attr = CONFIG_KEY_MAP[key]
     section_obj = getattr(config, section_attr)
-    field_info  = section_obj.model_fields[field_attr]
+    field_info  = type(section_obj).model_fields[field_attr]
 
     # Cast to the correct type
     annotation = field_info.annotation

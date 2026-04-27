@@ -54,6 +54,7 @@ class ConfigureScreen(Screen[None]):
                         Label("DB name"),
                         Input(value=partial.db_name or "mydb", id="db-name"),
                     ),
+                    classes="config_box"
                 ),
                 Label("", id="db-error", classes="error-msg"),
             ]

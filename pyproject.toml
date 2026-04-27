@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 # ── Project Metadata ───────────────────────────────────────────────────────────
 [project]
 name            = "dockerwiz"
-version         = "0.1.1"
+version         = "0.1.2"
 description     = "Generate production-ready Docker setups through an interactive terminal wizard."
 readme          = "README.md"
 license         = { text = "MIT" }
@@ -76,8 +76,16 @@ types    = "mypy dockerwiz/"
 check    = ["lint", "types", "test"]
 run      = "python -m dockerwiz.cli"
 
+# ── Hatch Test Environment (used by `hatch test`) ─────────────────────────────
+[tool.hatch.envs.hatch-test]
+extra-dependencies = [
+    "pytest-snapshot>=0.9.0",
+    "pytest-asyncio>=0.23.0",
+    "respx>=0.21.0",
+]
+
 # ── Test Matrix ────────────────────────────────────────────────────────────────
-[[tool.hatch.envs.test.matrix]]
+[[tool.hatch.envs.hatch-test.matrix]]
 python = ["3.11", "3.12", "3.13"]
 
 # ── Pytest Configuration ───────────────────────────────────────────────────────
