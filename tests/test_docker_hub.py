@@ -4,7 +4,7 @@ import pytest
 import respx
 from httpx import Response
 
-from dockerwiz.docker_hub import fetch_all_versions, fetch_image_versions
+from dockerwiz.docker_hub import VersionCache, fetch_all_versions, fetch_image_versions
 from dockerwiz.fallbacks import FALLBACK_VERSIONS
 
 
@@ -57,7 +57,9 @@ async def test_fetch_non_200_falls_back():
 
 @pytest.mark.asyncio
 @respx.mock
-async def test_fetch_all_versions_offline():
+async def test_fetch_all_versions_offline(mocker):
+    mocker.patch("dockerwiz.docker_hub._load_cache", return_value=VersionCache())
+
     for image in ["python", "golang", "node"]:
         respx.get(
             f"https://hub.docker.com/v2/repositories/library/{image}/tags?page_size=100"

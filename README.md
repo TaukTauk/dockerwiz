@@ -8,7 +8,7 @@ dockerwiz removes Docker setup friction. Run one command, walk through a 6-scree
 $ dockerwiz new
 ```
 
-![wizard demo placeholder](https://raw.githubusercontent.com/TaukTauk/dockerwiz/main/docs/assets/demo.gif)
+![wizard demo placeholder](docs/images/dockerwiz_new.png)
 
 ---
 

@@ -7,6 +7,29 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.1.2] — 2026-04-27
+
+### Fixed
+
+- **`hatch test` missing dependencies**: `respx`, `pytest-asyncio`, and `pytest-snapshot` were only
+  declared in the `default` hatch environment. The built-in `hatch-test` environment (used by
+  `hatch test`) never received them, causing an `ImportError` on collection. Added a
+  `[tool.hatch.envs.hatch-test]` section with `extra-dependencies` so `hatch test` works out of
+  the box.
+- **Test matrix ignored by `hatch test`**: the Python version matrix was declared under
+  `[[tool.hatch.envs.test.matrix]]` instead of `[[tool.hatch.envs.hatch-test.matrix]]`, so
+  `hatch test` fell back to the system Python (3.14) rather than the declared 3.11–3.13 range.
+- **`test_fetch_all_versions_offline` flaky on warm cache**: the test mocked Docker Hub HTTP calls
+  with `respx` but did not patch the disk cache. If `~/.dockerwiz/cache.json` held fresh entries,
+  `fetch_all_versions` returned cached data without making any HTTP requests and `is_live` stayed
+  `True`, flipping the assertion. Fixed by patching `_load_cache` to return an empty
+  `VersionCache()` for the duration of the test.
+- **Pydantic v2.11 deprecation warnings**: `model_fields` was accessed on model *instances* in
+  `config.py` and `cli.py`. Pydantic v2.11 deprecates instance-level access in favour of
+  `type(obj).model_fields`. Both call-sites updated to avoid the deprecation warning.
+
+---
+
 ## [0.1.1] — 2026-04-25
 
 ### Fixed
@@ -68,5 +91,6 @@ Initial release.
 - User template overrides via `~/.dockerwiz/templates/`
 - Unexpected errors logged to `~/.dockerwiz/logs/debug.log`
 
+[0.1.2]: https://github.com/TaukTauk/dockerwiz/releases/tag/v0.1.2
 [0.1.1]: https://github.com/TaukTauk/dockerwiz/releases/tag/v0.1.1
 [0.1.0]: https://github.com/TaukTauk/dockerwiz/releases/tag/v0.1.0
